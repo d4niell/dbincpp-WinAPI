@@ -221,7 +221,7 @@ static int callback_login(void* NotUsed, int argc, char** argv, char** azColName
     for (i = 0; i < argc; i++) {
         if (i == 0)
         {
-            if (s_uname == argv[0] && s_password == argv[1]) {
+            if (argv[0] == s_uname && argv[1] == s_password) {
                 MessageBeep(MB_ICONERROR);
             }
             // printf("name: %s price: $%s", argv[0], argv[1]);
@@ -302,6 +302,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             GetWindowTextW(hUsername, user.uname, 100);
             GetWindowTextW(hPassword, user.pwd, 100);
             std::string sql = "SELECT username, password FROM User WHERE username ='" + s_uname + "' AND password = '" + s_password + "'";
+            fetch_credentials(dir, sql.c_str());
  
         }
         switch (wParam) {
