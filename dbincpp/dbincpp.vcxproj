@@ -127,12 +127,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\sqlite\sqlite3.h" />
+    <ClInclude Include="..\sqlite\sqlite3ext.h" />
     <ClInclude Include="dbincpp.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sqlite\shell.c" />
+    <ClCompile Include="..\sqlite\sqlite3.c" />
     <ClCompile Include="dbincpp.cpp" />
   </ItemGroup>
   <ItemGroup>

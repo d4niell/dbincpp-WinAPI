@@ -6,15 +6,19 @@
 #include <Windows.h>
 #include <fstream>
 #include <algorithm>
+#include "../sqlite/sqlite3.h"
 #define SETTINGS_MENU_TEST 3
 #define MAX_LOADSTRING 100
 #define h_button1 4
+#define h_button2 5
 void AddMenus(HWND hWnd);
 void AddControls(HWND);
 HMENU hMenu;
+const char* dir = "C:\\Database.db";
 // Global Variables:
 HINSTANCE hInst;                       // current instance
 HWND hUsername;
+HWND hPassword;
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
@@ -127,21 +131,98 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - post a quit message and return
 //
 //
+static int createTable(const char* s) {
+    system("title initializing databases");
+    int exception;
+    sqlite3* db;
+    std::string query = "CREATE TABLE IF NOT EXISTS User ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "username TEXT NOT NULL,"
+        "password TEXT NOT NULL,"
+        "cash INTEGER NOT NULL DEFAULT 0);";
+
+    char* Error;
+    int exit = 0;
+    exit = sqlite3_open(s, &db);
+    exit = sqlite3_exec(db, query.c_str(), NULL, 0, &Error);
+    if (exit != SQLITE_OK) {
+        //	logs("error on user table", 2);
+        sqlite3_free(Error);
+    }
+    else {
+        //logs("User table Created Successfully", 1);	
+        query = "CREATE TABLE IF NOT EXISTS Marketplace ("
+            "userID INTEGER,"
+            "itemName TEXT,"
+            "price INTEGER);";
+
+        exit = sqlite3_open(s, &db);
+        exit = sqlite3_exec(db, query.c_str(), NULL, 0, &Error);
+        if (exit != SQLITE_OK) {
+            //	logs("error on Marketplace table", 2);
+            sqlite3_free(Error);
+        }
+        else {
+            //logs("Marketplace Database table Created Successfully", 1);
+            query = "CREATE TABLE IF NOT EXISTS Inventory ("
+                "userID INTEGER,"
+                "item TEXT,"
+                "amount INTEGER);";
+
+            exit = sqlite3_open(s, &db);
+            exit = sqlite3_exec(db, query.c_str(), NULL, 0, &Error);
+            if (exit != SQLITE_OK) {
+                //	logs("error on  table", 2);
+                sqlite3_free(Error);
+            }
+            else {
+                //	logs("Inventory table was created successfully!", 1);
+                query = "CREATE TABLE IF NOT EXISTS Messages ("
+                    "MessageID	INTEGER UNIQUE,"
+                    "senderID INTEGER,"
+                    "sender_name TEXT,"
+                    "receiverID INTEGER,"
+                    "message TEXT,"
+                    "PRIMARY KEY(MessageID AUTOINCREMENT));";
+
+                exit = sqlite3_open(s, &db);
+                exit = sqlite3_exec(db, query.c_str(), NULL, 0, &Error);
+
+                if (exit != SQLITE_OK) {
+                    //	logs("error on  table", 2);
+                    sqlite3_free(Error);
+
+                }
+                else {
+
+                }
+
+            }
+        }
+    }
+
+    sqlite3_close(db);
+
+    return 0;
+}
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
 
     case WM_CREATE:
+        createTable(dir);
         AddControls(hWnd);
         AddMenus(hWnd);
         break;
     case WM_COMMAND:
     {
         if (LOWORD(wParam) == h_button1) {
-            wchar_t text[100];
-            GetWindowTextW(hUsername, text, 100);
-            MessageBox(hWnd, text, text, MB_OK);
+            wchar_t uname[100];
+            wchar_t pwd[100];
+            GetWindowTextW(hUsername, uname, 100);
+            GetWindowTextW(hPassword, pwd, 100);
+           //TODO LOGIN 
         }
         switch (wParam) {
         case 1:
@@ -153,9 +234,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case 3:
             int return_ok = MessageBox(hWnd, L"Are you sure?", L"Clear Logs", MB_OKCANCEL);
             if (return_ok == 1) {
-                MessageBox(hWnd, L"Logs have been cleared succesfully", L"Succesfull", MB_OK);
-                int bcd = remove("dbincpp.txt"); if (bcd == 0) {
-                    MessageBeep(MB_ICONEXCLAMATION); 
+                int bcd = remove("dbincpp.txt"); if (bcd != 0) {
+                    MessageBeep(MB_ICONERROR);
+                    MessageBox(hWnd, L"Something Wen't wrong. Have you tried to run this app with admin perms?", L"Clear Logs error", MB_OK);
                 }     
 
             }
@@ -204,14 +285,17 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 void AddMenus(HWND hWnd) {
     hMenu = CreateMenu();
     HMENU hSettingsmenu = CreateMenu();
-    AppendMenu(hSettingsmenu, MF_STRING, SETTINGS_MENU_TEST, L"test");
+    AppendMenu(hSettingsmenu, MF_STRING, SETTINGS_MENU_TEST, L"Clear Logs (local)");
     AppendMenu(hMenu, MF_POPUP, (UINT_PTR) hSettingsmenu, L"Settings");
     AppendMenu(hMenu, MF_STRING, 2, L"Help");
     SetMenu(hWnd, hMenu);
 
 }
 void AddControls(HWND hWnd) {
-    CreateWindowW(L"static", L"username:", WS_VISIBLE | WS_CHILD, 200, 100, 100, 50, hWnd, NULL, NULL, NULL);
-    hUsername = CreateWindowW(L"edit", L"... ", WS_VISIBLE | WS_CHILD | WS_BORDER, 200, 152, 100, 50, hWnd, NULL, NULL, NULL);
-    CreateWindowW(TEXT("BUTTON"), TEXT("BUTTON"), WS_CHILD | WS_VISIBLE, 10, 10, 80, 20, hWnd, (HMENU) h_button1, NULL, NULL);
+    CreateWindowW(L"static", L"username:", WS_VISIBLE | WS_CHILD, 200, 100, 100, 15, hWnd, NULL, NULL, NULL);
+    hUsername = CreateWindowW(L"edit", L"... ", WS_VISIBLE | WS_CHILD | WS_BORDER, 200, 152, 100, 15, hWnd, NULL, NULL, NULL);
+    hPassword = CreateWindowW(L"edit", L"... ", WS_VISIBLE | WS_CHILD | WS_BORDER, 200, 170, 100, 15, hWnd, NULL, NULL, NULL);
+    CreateWindowW(TEXT("BUTTON"), TEXT("Login"), WS_CHILD | WS_VISIBLE, 200, 200, 80, 20, hWnd, (HMENU) h_button1, NULL, NULL);
+   // CreateWindowW(L"static", L"Not Registered Yet? Press Register.", WS_VISIBLE | WS_CHILD, 200, 252, 100, 60, hWnd,NULL, NULL, NULL);
+    CreateWindowW(TEXT("BUTTON"), TEXT("Register"), WS_CHILD | WS_VISIBLE, 200, 240, 80, 20, hWnd, (HMENU) h_button2, NULL, NULL, NULL);
 }
