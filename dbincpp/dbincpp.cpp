@@ -28,6 +28,13 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+struct {
+public:
+    wchar_t uname[100];
+    wchar_t pwd[100];
+}user;
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -205,6 +212,62 @@ static int createTable(const char* s) {
 
     return 0;
 }
+static int callback_login(void* NotUsed, int argc, char** argv, char** azColName) {
+    std::wstring ws(user.uname);
+    std::string s_uname(ws.begin(), ws.end());
+    std::wstring sw(user.pwd);
+    std::string s_password(sw.begin(), sw.end());
+    int i;
+    for (i = 0; i < argc; i++) {
+        if (i == 0)
+        {
+            if (s_uname == argv[0] && s_password == argv[1]) {
+                MessageBeep(MB_ICONERROR);
+            }
+            // printf("name: %s price: $%s", argv[0], argv[1]);
+        }
+    }
+    printf("\n");
+    return 0;
+}
+static int fetch_credentials(const char* s, std::string sql)
+{
+    sqlite3* DB;
+    char* messageError;
+    int exit = sqlite3_open(s, &DB);
+    /* An open database, SQL to be evaluated, Callback function, 1st argument to callback, Error msg written here*/
+    exit = sqlite3_exec(DB, sql.c_str(), callback_login, 0, &messageError);
+
+    if (exit != SQLITE_OK) {
+        std::ofstream data;
+        data.open("dbincpp_logs.txt");
+        data << "\nSomething bad happened in fetch_credentials";
+        data.close();
+       // std::cerr << "Error in selectData function." << std::endl;
+        sqlite3_free(messageError);
+    }
+    else
+        return(0);
+}
+static int Register(const char* s, std::string sql)
+{
+    sqlite3* DB;
+    char* messageError;
+    int exit = sqlite3_open(s, &DB);
+    /* An open database, SQL to be evaluated, Callback function, 1st argument to callback, Error msg written here*/
+    exit = sqlite3_exec(DB, sql.c_str(), NULL, 0, &messageError);
+
+    if (exit != SQLITE_OK) {
+        // std::cerr << "Error in selectData function." << std::endl;
+        sqlite3_free(messageError);
+        std::ofstream data;
+        data.open("dbincpp_logs.txt");
+        data << "\nSomething bad happened in fetch_credentials";
+        data.close();
+    }
+    else  
+        return(0);
+}
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -217,12 +280,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_COMMAND:
     {
+        if (LOWORD(wParam) == h_button2) {
+            GetWindowTextW(hUsername, user.uname, 100);
+            GetWindowTextW(hPassword, user.pwd, 100);
+            std::wstring ws(user.uname);
+            std::string s_uname(ws.begin(), ws.end());
+            std::wstring sw(user.pwd);
+            std::string s_password(sw.begin(), sw.end());
+
+            std::string sql = "INSERT INTO User (username, password) VALUES ('" + s_uname + "','" + s_password + "');";
+            Register(dir, sql.c_str());
+            CreateWindowW(L"static", L"Registration Successfull", WS_VISIBLE | WS_CHILD, 200, 50, 150, 15, hWnd, NULL, NULL, NULL);
+        }
+
         if (LOWORD(wParam) == h_button1) {
-            wchar_t uname[100];
-            wchar_t pwd[100];
-            GetWindowTextW(hUsername, uname, 100);
-            GetWindowTextW(hPassword, pwd, 100);
-           //TODO LOGIN 
+
+            std::wstring ws(user.uname);
+            std::string s_uname(ws.begin(), ws.end());
+            std::wstring sw(user.pwd);
+            std::string s_password(sw.begin(), sw.end());
+            GetWindowTextW(hUsername, user.uname, 100);
+            GetWindowTextW(hPassword, user.pwd, 100);
+            std::string sql = "SELECT username, password FROM User WHERE username ='" + s_uname + "' AND password = '" + s_password + "'";
+ 
         }
         switch (wParam) {
         case 1:
